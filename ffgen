@@ -1,0 +1,64 @@
+-- fast_flag_generator.lua
+-- Simple, fast generator of unique alphanumeric flags/tokens
+-- Usage: call generate_n_flags(n, length) to get a table of n flags of given length
+
+local FlagGen = {}
+
+-- Characters to use in flags (A-Z a-z 0-9)
+local charset = {}
+do
+    for c = 48, 57  do table.insert(charset, string.char(c)) end -- 0-9
+    for c = 65, 90  do table.insert(charset, string.char(c)) end -- A-Z
+    for c = 97, 122 do table.insert(charset, string.char(c)) end -- a-z
+end
+
+-- Seed PRNG once (good enough for simple uses)
+math.randomseed(os.time() ~ (os.clock() * 1000000))
+
+local function random_char()
+    return charset[ math.random(1, #charset) ]
+end
+
+-- generate a single flag of given length
+function FlagGen.generate_flag(length)
+    length = length or 16
+    local t = {}
+    for i = 1, length do
+        t[i] = random_char()
+    end
+    return table.concat(t)
+end
+
+-- generate n unique flags (will re-generate on collision)
+function FlagGen.generate_n_flags(n, length)
+    local seen = {}
+    local out = {}
+    local i = 0
+    while i < n do
+        local f = FlagGen.generate_flag(length)
+        if not seen[f] then
+            seen[f] = true
+            table.insert(out, f)
+            i = i + 1
+        end
+        -- loop continues until we have n unique flags
+    end
+    return out
+end
+
+-- save flags to file (one per line)
+function FlagGen.save_to_file(flags, filename)
+    local fh, err = io.open(filename, "w")
+    if not fh then return nil, err end
+    for _, f in ipairs(flags) do
+        fh:write(f, "\n")
+    end
+    fh:close()
+    return true
+end
+
+-- Example usage:
+-- local flags = FlagGen.generate_n_flags(1000, 20) -- 1000 flags, 20 chars each
+-- FlagGen.save_to_file(flags, "flags.txt")
+
+return FlagGen
